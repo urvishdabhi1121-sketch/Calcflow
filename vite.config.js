@@ -4,8 +4,7 @@ import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Replace <your-repo-name> with your exact GitHub repository name (keep both slashes)
-  base: '/<your-repo-name>/',
+  base: '/Calcflow/',
   plugins: [
     react(),
   ],
