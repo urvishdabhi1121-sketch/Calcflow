@@ -5,6 +5,23 @@
     <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Calcflow</title>
+    <script>
+      // Intercept background API/POST calls to prevent 405 errors on GitHub Pages
+      const originalFetch = window.fetch;
+      window.fetch = async function(...args) {
+        const [resource, config] = args;
+        const url = typeof resource === 'string' ? resource : resource?.url || '';
+
+        // If a request tries to call /api or analytics on this static host, return an empty mock success
+        if (url.includes('/api/') || url.includes('/analytics') || url.includes('base44')) {
+          return new Response(JSON.stringify({ status: 'ok', data: [] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        return originalFetch.apply(this, args);
+      };
+    </script>
   </head>
   <body>
     <div id="root"></div>
