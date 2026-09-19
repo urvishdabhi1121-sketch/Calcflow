@@ -9,14 +9,59 @@
     <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Calcflow</title>
+
     <script>
-      // Mock any residual Base44 background API calls to prevent 405 halts
+      // 1. Intercept XMLHttpRequest (XHR) to kill /batch 405 errors
+      (function() {
+        const originalOpen = XMLHttpRequest.prototype.open;
+        const originalSend = XMLHttpRequest.prototype.send;
+
+        XMLHttpRequest.prototype.open = function(method, url) {
+          this._url = url ? url.toString() : '';
+          this._method = method ? method.toUpperCase() : 'GET';
+          return originalOpen.apply(this, arguments);
+        };
+
+        XMLHttpRequest.prototype.send = function(body) {
+          // Block calls to /batch, /analytics, /api, or any telemetry POSTs
+          if (
+            this._url.includes('batch') ||
+            this._url.includes('analytics') ||
+            this._url.includes('telemetry') ||
+            this._url.includes('/api/') ||
+            (this._method === 'POST' && !this._url.startsWith('http'))
+          ) {
+            Object.defineProperty(this, 'readyState', { value: 4, writable: false });
+            Object.defineProperty(this, 'status', { value: 200, writable: false });
+            Object.defineProperty(this, 'statusText', { value: 'OK', writable: false });
+            Object.defineProperty(this, 'responseText', { value: '{"status":"ok"}', writable: false });
+            Object.defineProperty(this, 'response', { value: '{"status":"ok"}', writable: false });
+
+            setTimeout(() => {
+              if (typeof this.onreadystatechange === 'function') this.onreadystatechange();
+              if (typeof this.onload === 'function') this.onload();
+            }, 10);
+            return;
+          }
+          return originalSend.apply(this, arguments);
+        };
+      })();
+
+      // 2. Intercept window.fetch
       const originalFetch = window.fetch;
       window.fetch = async function(...args) {
-        const [resource] = args;
+        const [resource, config] = args;
         const url = typeof resource === 'string' ? resource : resource?.url || '';
-        if (url.includes('/api/') || url.includes('/analytics') || url.includes('base44')) {
-          return new Response(JSON.stringify({ status: 'ok', data: [] }), {
+        const method = config?.method ? config.method.toUpperCase() : 'GET';
+
+        if (
+          url.includes('batch') ||
+          url.includes('analytics') ||
+          url.includes('telemetry') ||
+          url.includes('/api/') ||
+          (method === 'POST' && !url.startsWith('http'))
+        ) {
+          return new Response(JSON.stringify({ status: 'ok' }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
           });
