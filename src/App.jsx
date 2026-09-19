@@ -1,79 +1,49 @@
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import ScrollToTop from './components/ScrollToTop';
-import { SettingsProvider } from '@/lib/SettingsContext';
-import Layout from '@/components/Layout';
-import Home from '@/pages/Home';
-import Tools from '@/pages/Tools';
-import History from '@/pages/History';
-import Favorites from '@/pages/Favorites';
-import Settings from '@/pages/Settings';
-import SmartCalculator from '@/pages/SmartCalculator';
-import Onboarding from '@/pages/Onboarding';
-import ToolPage from '@/pages/ToolPage';
+import React from 'react'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+// Auto-import all page components present in your pages directory
+const pageModules = import.meta.glob('./pages/**/*.{jsx,tsx,js}', { eager: true });
 
-  // Show loading spinner while checking app public settings or auth
-  if (isLoadingPublicSettings || isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
+function getPages() {
+  const routes = [];
+  for (const path in pageModules) {
+    const Component = pageModules[path].default;
+    if (!Component) continue;
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
+    // Convert file paths like ./pages/Home.jsx or ./pages/index.jsx to routes
+    let routePath = path
+      .replace('./pages', '')
+      .replace(/\.(jsx|tsx|js)$/, '')
+      .toLowerCase();
+
+    if (routePath.endsWith('/index') || routePath === '/index') {
+      routePath = routePath.replace(/\/index$/, '') || '/';
     }
+
+    routes.push({ path: routePath, Component });
   }
-
-  // Render the main app
-  return (
-    <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/tools" element={<Tools />} />
-        <Route path="/tools/:toolId" element={<ToolPage />} />
-        <Route path="/smart" element={<SmartCalculator />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/onboarding" element={<Onboarding />} />
-      </Route>
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
-  );
-};
-
-
-function App() {
-
-  return (
-    <AuthProvider>
-      <SettingsProvider>
-        <QueryClientProvider client={queryClientInstance}>
-          <Router>
-            <ScrollToTop />
-            <AuthenticatedApp />
-          </Router>
-          <Toaster />
-        </QueryClientProvider>
-      </SettingsProvider>
-    </AuthProvider>
-  )
+  return routes;
 }
 
-export default App
+export default function App() {
+  const pages = getPages();
+  const DefaultComponent = pages.length > 0 ? pages[0].Component : () => (
+    <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
+      <h1>Calcflow</h1>
+      <p>App mounted successfully. Add or check your pages in <code>src/pages/</code>.</p>
+    </div>
+  );
+
+  return (
+    <HashRouter>
+      <Routes>
+        {pages.map(({ path, Component }) => (
+          <Route key={path} path={path} element={<Component />} />
+        ))}
+        {/* Default / fallback route */}
+        <Route path="/" element={<DefaultComponent />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </HashRouter>
+  );
+}
