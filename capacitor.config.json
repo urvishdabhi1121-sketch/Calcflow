@@ -1,0 +1,6 @@
+{
+  "appId": "com.urvish.calcflow",
+  "appName": "Calcflow",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
