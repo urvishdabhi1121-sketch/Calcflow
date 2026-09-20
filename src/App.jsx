@@ -1,53 +1,10 @@
-import React, { createContext, useContext, useState } from 'react';
+import React from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import Layout from '@/components/Layout';
-
-export const SettingsContext = createContext(null);
-
-export const useSettings = () => {
-  const context = useContext(SettingsContext);
-
-  if (!context) {
-    return {
-      theme: 'dark',
-      decimalPlaces: 4,
-      angleUnit: 'deg',
-      history: [],
-      setTheme: () => {},
-      updateSettings: () => {},
-    };
-  }
-
-  return context;
-};
-
-export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState({
-    theme: 'dark',
-    decimalPlaces: 4,
-    angleUnit: 'deg',
-    history: [],
-  });
-
-  const updateSettings = (newSettings) => {
-    setSettings((prev) => ({
-      ...prev,
-      ...newSettings,
-    }));
-  };
-
-  return (
-    <SettingsContext.Provider
-      value={{
-        ...settings,
-        updateSettings,
-      }}
-    >
-      {children}
-    </SettingsContext.Provider>
-  );
-}
+import {
+  SettingsProvider,
+} from '@/lib/SettingsContext';
 
 const pageModules = import.meta.glob('./pages/**/*.{jsx,tsx,js}', {
   eager: true,
@@ -87,10 +44,48 @@ export default function App() {
       <HashRouter>
         <Routes>
 
-          {/* Main application layout with bottom navigation */}
+          {/* Main application layout */}
           <Route element={<Layout />}>
 
-            {routes.map(({ path, Component }) => (
+            {routes
+              .filter(({ path }) =>
+                ![
+                  '/login',
+                  '/register',
+                  '/forgotpassword',
+                  '/resetpassword',
+                  '/oauthconsent',
+                  '/onboarding',
+                ].includes(path)
+              )
+              .map(({ path, Component }) => (
+                <Route
+                  key={path}
+                  path={path}
+                  element={<Component />}
+                />
+              ))}
+
+            <Route
+              path="/"
+              element={<Navigate to="/home" replace />}
+            />
+
+          </Route>
+
+          {/* Pages that should NOT show bottom navigation */}
+          {routes
+            .filter(({ path }) =>
+              [
+                '/login',
+                '/register',
+                '/forgotpassword',
+                '/resetpassword',
+                '/oauthconsent',
+                '/onboarding',
+              ].includes(path)
+            )
+            .map(({ path, Component }) => (
               <Route
                 key={path}
                 path={path}
@@ -98,13 +93,11 @@ export default function App() {
               />
             ))}
 
-            {/* Default page */}
-            <Route path="/" element={<Navigate to="/home" replace />} />
-
-          </Route>
-
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/home" replace />} />
+          {/* Unknown page */}
+          <Route
+            path="*"
+            element={<Navigate to="/home" replace />}
+          />
 
         </Routes>
       </HashRouter>
