@@ -2,76 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
     <meta
-      http-equiv="Content-Security-Policy"
-      content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval' blob:; style-src * 'unsafe-inline';"
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
     />
-    <link rel="icon" type="image/svg+xml" href="https://base44.com/logo_v2.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <meta
+      name="description"
+      content="Calcflow - Smart calculators for everyday life, finance, health, construction, engineering and more."
+    />
+
+    <meta name="theme-color" content="#0f172a" />
+
     <title>Calcflow</title>
 
-    <script>
-      // 1. Intercept XMLHttpRequest (XHR) to kill /batch 405 errors
-      (function() {
-        const originalOpen = XMLHttpRequest.prototype.open;
-        const originalSend = XMLHttpRequest.prototype.send;
-
-        XMLHttpRequest.prototype.open = function(method, url) {
-          this._url = url ? url.toString() : '';
-          this._method = method ? method.toUpperCase() : 'GET';
-          return originalOpen.apply(this, arguments);
-        };
-
-        XMLHttpRequest.prototype.send = function(body) {
-          // Block calls to /batch, /analytics, /api, or any telemetry POSTs
-          if (
-            this._url.includes('batch') ||
-            this._url.includes('analytics') ||
-            this._url.includes('telemetry') ||
-            this._url.includes('/api/') ||
-            (this._method === 'POST' && !this._url.startsWith('http'))
-          ) {
-            Object.defineProperty(this, 'readyState', { value: 4, writable: false });
-            Object.defineProperty(this, 'status', { value: 200, writable: false });
-            Object.defineProperty(this, 'statusText', { value: 'OK', writable: false });
-            Object.defineProperty(this, 'responseText', { value: '{"status":"ok"}', writable: false });
-            Object.defineProperty(this, 'response', { value: '{"status":"ok"}', writable: false });
-
-            setTimeout(() => {
-              if (typeof this.onreadystatechange === 'function') this.onreadystatechange();
-              if (typeof this.onload === 'function') this.onload();
-            }, 10);
-            return;
-          }
-          return originalSend.apply(this, arguments);
-        };
-      })();
-
-      // 2. Intercept window.fetch
-      const originalFetch = window.fetch;
-      window.fetch = async function(...args) {
-        const [resource, config] = args;
-        const url = typeof resource === 'string' ? resource : resource?.url || '';
-        const method = config?.method ? config.method.toUpperCase() : 'GET';
-
-        if (
-          url.includes('batch') ||
-          url.includes('analytics') ||
-          url.includes('telemetry') ||
-          url.includes('/api/') ||
-          (method === 'POST' && !url.startsWith('http'))
-        ) {
-          return new Response(JSON.stringify({ status: 'ok' }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        }
-        return originalFetch.apply(this, args);
-      };
-    </script>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="https://base44.com/logo_v2.svg"
+    />
   </head>
+
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.jsx"></script>
+
+    <script type="module" src="/Calcflow/src/main.jsx"></script>
   </body>
 </html>
