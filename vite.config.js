@@ -1,13 +1,13 @@
-import path from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
+
+const rootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
-  base: '/Calcflow/',
+  base: './',
 
-  plugins: [
-    react(),
-  ],
+  plugins: [react()],
 
   define: {
     'import.meta.env.VITE_BASE44_APP_ID': JSON.stringify('6aaef4b5d1dd0d215b647eb5'),
@@ -16,7 +16,7 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': `${rootDir}src`,
     },
   },
 });
